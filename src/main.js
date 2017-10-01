@@ -13,7 +13,8 @@ const store = new Vuex.Store({
   state: {
     people: {},
     map: null,
-    isDispatch: true
+    isDispatch: true,
+    selectedPerson: null
   },
   mutations: {
     addPerson: (state, [id, values]) => {
@@ -34,6 +35,9 @@ const store = new Vuex.Store({
           ...replace
         }
       }
+    },
+    setSelectedPerson (state, id) {
+      state.selectedPerson = id
     },
     togglePerson: (state) => {
       state.isDispatch = !state.isDispatch

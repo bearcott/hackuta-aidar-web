@@ -1,6 +1,6 @@
 import Mapbox from 'mapbox-gl-vue'
 import axios from 'axios'
-import { transformPerson, createCircleSource, circleLayer, createGeoJSONCircle, geocircleLayer, geocircleLabelLayer } from '@/helpers/map'
+import { transformPerson, createCircleSource, circleLayer, createGeoJSONCircle, geocircleLayer, geocircleLabelLayer, setMap } from '@/helpers/map'
 
 export default {
   name: 'map',
@@ -15,18 +15,18 @@ export default {
     mapLoaded (map) {
       this.$store.commit('setMap', map)
       map.setPitch(15)
+      axios.get('https://mryktvov7a.execute-api.us-east-1.amazonaws.com/prod/users?getproblems=true')
+        .then(({data}) => {
+          map.addSource('hazards', createCircleSource(
+            data.map(({longitude, latitude, danger}) =>
+            createGeoJSONCircle([longitude, latitude], 0.1)
+            )
+          ))
+          map.addLayer(geocircleLayer('hazards', 'red', 0.1), 'street')
+          map.addLayer(geocircleLabelLayer('hazards'))
+        })
       let addedSource = false
       const setPeople = () => {
-        axios.get('https://mryktvov7a.execute-api.us-east-1.amazonaws.com/prod/users?getproblems=true')
-          .then(({data}) => {
-            map.addSource('hazards', createCircleSource(
-              data.map(({longitude, latitude, danger}) =>
-              createGeoJSONCircle([longitude, latitude], 0.1)
-              )
-            ))
-            map.addLayer(geocircleLayer('hazards', 'red', 0.1), 'street')
-            map.addLayer(geocircleLabelLayer('hazards'))
-          })
         axios.get('https://mryktvov7a.execute-api.us-east-1.amazonaws.com/prod/users?getall=true')
           .then(({data}) => {
             data.forEach((person) =>
@@ -44,8 +44,9 @@ export default {
                 }
               })
 
-              map.addLayer(circleLayer('people', 'red', 1, ['==', 'needsAid', false]))
-              map.addLayer(circleLayer('people', 'green', 1, ['==', 'needsAid', true]))
+              map.addLayer(circleLayer('people', 'limegreen', 1, ['==', 'needsAid', false]))
+              map.addLayer(circleLayer('people', 'red', 1, ['==', 'needsAid', true]))
+              map.addLayer(circleLayer('people', 'yellow', 1, ['>', 'rescuer', '']))
 
               map.addLayer({
                 'id': 'points',
@@ -85,9 +86,21 @@ export default {
           })
       }
       setPeople()
-      // setInterval(setPeople, 2000)
+      setInterval(setPeople, 2000)
     },
     mapClicked (map, e) {
+      const features = map.queryRenderedFeatures(e.point, {
+        layers: ['points']
+      })
+      if (features.length) {
+        const feature = features[0]
+        const rescuer = this.$store.state.selectedPerson
+        const {longitude, latitude} = this.$store.state.people[feature.properties.id]
+        this.$store.commit('setPerson', [feature.properties.id, {rescuer}])
+        axios.get(`https://mryktvov7a.execute-api.us-east-1.amazonaws.com/prod/users?username=${feature.properties.id}&latitude=${latitude}&longitude=${longitude}&needsAid=false&rescuer=${rescuer}`)
+        setMap(this.$store.state)
+        return
+      }
       const rand = new Date().getTime()
       this.$store.commit('addPerson', [rand, {
         id: rand,

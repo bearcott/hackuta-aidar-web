@@ -1,4 +1,4 @@
-export const transformPerson = ({username, needsAid, latitude, longitude}) => ({
+export const transformPerson = ({id, username, needsAid, latitude, longitude, rescuer}) => ({
   'type': 'Feature',
   'geometry': {
     'type': 'Point',
@@ -7,7 +7,9 @@ export const transformPerson = ({username, needsAid, latitude, longitude}) => ({
   'properties': {
     'title': username,
     'icon': 'monument',
-    needsAid
+    needsAid: rescuer ? null : needsAid,
+    rescuer,
+    id
   }
 })
 

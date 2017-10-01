@@ -3,7 +3,7 @@
     <div class="left">
       <div class="graphs component">
         <div class="container">
-          <h1><div class="logo" /> AidAR</h1> 
+          <h1><img class="logo" src="/static/Icon-72@2x.png" /> AidAR</h1> 
           <controls/>
         </div>
       </div>
@@ -62,6 +62,7 @@ a {
   height: 30px;
   display: inline-block;
   margin-right: 5px;
+  border-radius: 100%;
 }
 .left {
   width: 30%;
@@ -76,7 +77,7 @@ a {
   box-sizing: border-box;
 }
 .container {
-  background: #1c2322;
+  background: #1c1d23;
   height: 100%;
 }
 .map {

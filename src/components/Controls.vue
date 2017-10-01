@@ -4,15 +4,18 @@
       <div class="square" v-bind:class="{green: isDispatch}" />
       {{isDispatch ? 'dispatch' : 'victim' }}
     </button>
-    <div v-for="person in dispatch" class="node dispatch">
+    <h1 class="title">need aid</h1>
+    <div v-for="person in victim" class="node dispatch">
+      <button v-on:click="focus(person.id)" class="title">{{person.username}}</button>
+      <button v-on:click="switchAid(person)" class="switch full">mark as rescued</button>
+    </div>
+    <h1 class="title">dispatchers</h1>
+    <div v-for="person in dispatch" class="node" v-bind:class="{rescued: !!person.rescuer}">
       <button v-on:click="focus(person.id)" class="title">{{person.username}}</button>
       <button v-on:click="switchAid(person)" class="switch first">needs help</button>
       <button v-on:click="destroy(person.id)" class="switch">dismiss</button>
     </div>
-    <div v-for="person in victim" class="node">
-      <button v-on:click="focus(person.id)" class="title">{{person.username}}</button>
-      <button v-on:click="switchAid(person)" class="switch full">already saved</button>
-    </div>
+    <h1 class="title">unknown</h1>
     <div v-for="person in unknowns" class="node" v-bind:class="{dispatch: person.needsAid}" >
       <button v-on:click="focus(person.id)" class="title">{{person.username || 'unknown'}}</button>
       <input v-on:input="onInput($event,person.id)" @keyup.enter="submit(person)"/>
@@ -48,8 +51,10 @@ export default {
       this.$store.commit('togglePerson')
     },
     focus (name) {
-      const {longitude, latitude} = this.$store.state.people[name] || {}
+      console.log(this.$store.state.people)
+      const {longitude, latitude, id} = this.$store.state.people[name] || {}
       if (!isNaN(longitude) && !isNaN(latitude)) {
+        this.$store.commit('setSelectedPerson', id)
         this.$store.state.map.getSource('userCircle').setData({
           'type': 'FeatureCollection',
           'features': [
@@ -71,7 +76,8 @@ export default {
       this.$store.commit('setPerson', [id, {
         id,
         username,
-        needsAid: !needsAid
+        needsAid: !needsAid,
+        rescuer: null
       }])
       axios.get(`https://mryktvov7a.execute-api.us-east-1.amazonaws.com/prod/users?username=${username}&latitude=${latitude}&longitude=${longitude}&needsAid=${!needsAid}`)
       setMap(this.$store.state)
@@ -82,10 +88,12 @@ export default {
       setMap(this.$store.state)
     },
     submit ({id, username, latitude, longitude, needsAid}) {
-      this.$store.commit('setPerson', [id, {
+      this.$store.commit('deletePerson', id)
+      this.$store.commit('setPerson', [username, {
         id,
         username,
-        isUnknown: false
+        isUnknown: false,
+        rescuer: null
       }])
       axios.get(`https://mryktvov7a.execute-api.us-east-1.amazonaws.com/prod/users?username=${username}&latitude=${latitude}&longitude=${longitude}&needsAid=${needsAid}`)
       setMap(this.$store.state)
@@ -99,6 +107,11 @@ export default {
 </script>
 
 <style scoped>
+h1.title {
+  font-size: 20px;
+  text-align: center;
+  clear: both;
+}
 .toggle {
   position: absolute;
   top: 0;
@@ -108,11 +121,11 @@ export default {
   z-index: 1337;
   background: #FCFCFC;
   color: #333;
-  padding: 10px 15px;
+  padding: 6px 8px;
   font-weight: bold;
   font-size: 14px;
   vertical-align: middle;
-  line-height: 14px;
+  line-height: 12px;
   border-radius: 4px;
   border: none;
 }
@@ -124,18 +137,21 @@ export default {
   border-radius: 3px;
   background: red;
   vertical-align: middle;
-  margin-right: 10px;
+  margin-right: 4px;
 }
 .square.green {
-  background: green;
+  background: limegreen;
 }
 .node {
   display: inline-block;
-  background: #1c2322;
+  background: #1c1d23;
   width: 100%;
   border-bottom: 2px solid;
   border-image: linear-gradient(to right, transparent, rgba(84, 255, 179, 0.29));
   border-image-slice: 1;
+}
+.node:hover {
+  background: #21232b;
 }
 .dispatch {
   background: linear-gradient(to right,#193e1f 0, rgba(25, 62, 31, 0.25))
@@ -165,7 +181,7 @@ export default {
 .switch.full {
   width: 100%;
 }
-.title {
+.node .title {
   width: 100%;
   display: inline-block;
   padding: 10px;
@@ -186,5 +202,8 @@ export default {
   color: #FCFCFC;
   border-color: rgba(84, 255, 179, 0.29);
   border-image-slice: 1;
+}
+.node.rescued {
+  background: #23242d;
 }
 </style>
