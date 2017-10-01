@@ -4,6 +4,7 @@
       <div class="graphs component">
         <div class="container">
           <h1><div class="logo" /> AidAR</h1> 
+          <controls/>
         </div>
       </div>
     </div>
@@ -13,21 +14,18 @@
           <main-map/>
         </div>
       </div>
-      <div class="chat component">
-        <div class="container">
-          <h1>AidAR</h1>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <script>
 import Map from './Map.vue'
+import Controls from './Controls.vue'
 export default {
   name: 'hello',
   components: {
-    'main-map': Map
+    'main-map': Map,
+    'controls': Controls
   }
 }
 </script>
@@ -68,6 +66,7 @@ a {
 .left {
   width: 30%;
   height: 100%;
+  overflow: scroll;
 }
 .right {
   width: 70%;
@@ -75,14 +74,13 @@ a {
 }
 .component {
   box-sizing: border-box;
-  padding: 5px;
 }
 .container {
-  background: #2c2f3e;
+  background: #1c2322;
   height: 100%;
 }
 .map {
-  height: 60%;
+  height: 100%;
   padding-bottom: 0;
   position: relative;
 }
@@ -94,5 +92,8 @@ a {
 }
 .graphs {
   height: 100%;
+}
+.left .container {
+  box-shadow: inset 0 5px 10px rgba(0,0,0,0.5);
 }
 </style>

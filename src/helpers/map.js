@@ -1,103 +1,112 @@
-import mapboxgl from 'mapbox-gl'
-import Vue from 'vue'
+export const transformPerson = ({username, needsAid, latitude, longitude}) => ({
+  'type': 'Feature',
+  'geometry': {
+    'type': 'Point',
+    'coordinates': [longitude, latitude]
+  },
+  'properties': {
+    'title': username,
+    'icon': 'monument',
+    needsAid
+  }
+})
 
-export const mapLoaded = (map, data) => {
-  console.log(data)
-  map.addLayer({
-    'id': 'points',
-    'type': 'symbol',
-    'source': {
-      'type': 'geojson',
-      'data': {
-        'type': 'FeatureCollection',
-        'features': data.map(
-            ({username, needsAid, latitude, longitude}) => ({
-              'type': 'Feature',
-              'geometry': {
-                'type': 'Point',
-                'coordinates': [longitude, latitude]
-              },
-              'properties': {
-                'title': username,
-                'icon': 'monument'
-              }
-            })
-        )
-      }
-    },
-    'layout': {
-      'icon-image': '{icon}-15',
-      'text-field': '{title}',
-      'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-      'text-offset': [0, 0.6],
-      'text-anchor': 'top'
-    }
+export const setMap = (state) => {
+  state.map.getSource('people').setData({
+    'type': 'FeatureCollection',
+    'features': Object.values(state.people).map(person =>
+      transformPerson(person)
+    )
   })
 }
 
-export const mapClicked = (map, e) => {
-  addPopUp(map, e)
-  console.log(e)
-  map.addLayer({
-    'id': 'lolol',
-    'type': 'symbol',
-    'source': {
-      'type': 'geojson',
-      'data': {
-        'type': 'FeatureCollection',
-        'features': [{
-          'type': 'Feature',
-          'geometry': {
-            'type': 'Point',
-            'coordinates': [e.lngLat.lng, e.lngLat.lat]
-          },
-          'properties': {
-            'title': 'Mapbox DC',
-            'icon': 'monument'
-          }
-        }]
-      }
-    },
-    'layout': {
-      'icon-image': '{icon}-15',
-      'text-field': '{title}',
-      'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-      'text-offset': [0, 0.6],
-      'text-anchor': 'top'
-    }
-  })
+export const setCircles = (state) => {
+  state.map.getSource('')
 }
-export const mapMouseMoved = (map, e) => {
-  const features = map.queryRenderedFeatures(e.point, {
-    layers: ['points']
-  })
-  map.getCanvas().style.cursor = (features.length) ? 'pointer' : ''
-}
-export const addPopUp = (map, e) => {
-  const features = map.queryRenderedFeatures(e.point, {
-    layers: ['points']
-  })
-  if (!features.length) {
-    return
+
+export const createCircleSource = (vals) => ({
+  'type': 'geojson',
+  'data': {
+    'type': 'FeatureCollection',
+    'features': vals
+  }
+})
+
+export const createGeoJSONCircle = (center, radiusInKm, points) => {
+  if (!points) points = 64
+
+  var coords = {
+    latitude: center[1],
+    longitude: center[0]
   }
 
-  const feature = features[0]
+  var km = radiusInKm
 
-  const PopupContent = Vue.extend({
-    template: '<button @click="popupClicked">Click Me!</button>',
-    methods: {
-      popupClicked () {
-        alert('Popup Clicked!')
-      }
+  var ret = []
+  var distanceX = km / (111.320 * Math.cos(coords.latitude * Math.PI / 180))
+  var distanceY = km / 110.574
+
+  var theta, x, y
+  for (var i = 0; i < points; i++) {
+    theta = (i / points) * (2 * Math.PI)
+    x = distanceX * Math.cos(theta)
+    y = distanceY * Math.sin(theta)
+
+    ret.push([coords.longitude + x, coords.latitude + y])
+  }
+  ret.push(ret[0])
+
+  return {
+    'type': 'Feature',
+    'geometry': {
+      'type': 'Polygon',
+      'coordinates': [ret]
+    },
+    'properties': {
+      'title': `${km} km`
     }
-  })
-
-  // Populate the popup and set its coordinates
-  // based on the feature found.
-  new mapboxgl.Popup()
-      .setLngLat(feature.geometry.coordinates)
-      .setHTML('<div id="vue-popup-content"></div>')
-      .addTo(map)
-
-  new PopupContent().$mount('#vue-popup-content')
+  }
 }
+
+export const geocircleLayer = (source, color, opacity) => ({
+  'id': `${source}-1-${color}`,
+  'type': 'fill',
+  'source': source,
+  'layout': {},
+  'paint': {
+    'fill-color': color,
+    'fill-opacity': opacity
+  }
+})
+
+export const circleLayer = (source, color, opacity, filter) => ({
+  'id': `${source}-1-${color}`,
+  'type': 'circle',
+  'source': source,
+  'layout': {},
+  filter,
+  paint: {
+    'circle-color': {
+      type: 'interval',
+      stops: [
+        [0, color],
+        [50, color]
+      ]
+    }
+  }
+})
+export const geocircleLabelLayer = (source) => ({
+  'id': `${source}-count`,
+  'type': 'symbol',
+  'source': source,
+  'layout': {
+    'text-field': '{title}',
+    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+    'text-offset': [0, 0],
+    'text-size': 12
+  },
+  'paint': {
+    'text-color': '#FFF'
+  }
+})
+
